@@ -41,14 +41,24 @@ st.markdown(hide_default_format, unsafe_allow_html=True)
 
 st.cache_resource()
 def get_weather_data():
-    conn = duckdb.connect('bikeshare_db.duckdb')
-    weather = conn.execute("SELECT * from weather_data LIMIT 57").df()
+    #conn = duckdb.connect('bikeshare_db.duckdb')
+    #weather = conn.execute("SELECT * from weather_data LIMIT 57").df()
+    weather = pd.read_csv("simulation_data/weatherdata.csv")
+    weather["datetime"] = pd.to_datetime(weather["datetime"])
     weather[["tempmax", "tempmin", "humidity", "precip", "snow", "windspeed", "windgust", "conditions"]] = weather[["tempmax", "tempmin", "humidity", "precip", "snow", "windspeed", "windgust", "conditions"]].round(2)
-    conn.close()
+    #conn.close()
 
     return weather
 
 weather = get_weather_data()
+
+@st.cache_resource()
+def fetch_rides():
+    rides = pd.read_csv("simulation_data/sampledata.csv")
+    rides[["started_at", "ended_at"]] =  pd.to_datetime(rides[["started_at", "ended_at"]])
+
+    return rides
+
 
 @st.cache_resource()
 def model_fit():
@@ -91,8 +101,10 @@ def calculate_earnings(df):
     return df
 
 def get_ride_data(date):
-    conn = duckdb.connect('bikeshare_db.duckdb')
-    rides = conn.execute(f"SELECT * FROM ride_data WHERE CAST(started_at AS DATE) = '{date}' ORDER BY started_at ASC").df()
+    #conn = duckdb.connect('bikeshare_db.duckdb')
+    #rides = conn.execute(f"SELECT * FROM ride_data WHERE CAST(started_at AS DATE) = '{date}' ORDER BY started_at ASC").df()
+    rides = fetch_rides()
+    rides = rides[rides['started_at'].date() == date]]
     rides = calculate_earnings(rides)
     return rides
 
