@@ -62,7 +62,7 @@ def fetch_rides():
 
 @st.cache_resource()
 def model_fit():
-    pastdata = pd.read_csv("simulation data/pastdata.csv")
+    pastdata = pd.read_csv("simulation_data/pastdata.csv")
     X = pastdata[["tempmax", "tempmin", "humidity", "precip", "snow", "windspeed", "windgust"]]
     y = pastdata["count"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
