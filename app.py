@@ -168,7 +168,7 @@ if st.session_state.is_playing:
                 col1[5].metric("Humidity", value=str(round(row['humidity'],2))+"%")
 
             first = rides.iloc[0].to_frame().T
-            fig = px.scatter_mapbox(first, lat = 'start_lat', lon = 'start_lng', height=340)
+            fig = px.scatter_mapbox(first, lat = 'start_lat', lon = 'start_lng', height=400)
 
             #NON-DISAPPEARING TIME ELEMENTS
             for i in range(0, len(rides), int(len(rides)/8)):
@@ -196,15 +196,13 @@ if st.session_state.is_playing:
 
                 with map_placeholder.container():
                     currenttime = cumul_rides.iloc[-1]['started_at'].time()
-                    st.markdown("#### Time: "+str(currenttime))
-                    col2 = st.columns([1.3,0.85,1.2])
+                    col2 = st.columns([1,1,1.1])
                     col2[0].plotly_chart(fig, key="map - "+str(current_date)+" - "+str(i))
 
                     max_stn_start = cumul_rides[['start_station_name', "ride_id"]].groupby('start_station_name').count().reset_index().sort_values(by='ride_id', ascending=False).iloc[0]
-                    col2[0].write("Most frequent start station: "+max_stn_start["start_station_name"]+" ("+str(max_stn_start['ride_id'])+")")
 
                     max_stn_end = cumul_rides[['end_station_name', "ride_id"]].groupby('end_station_name').count().reset_index().sort_values(by='ride_id', ascending=False).iloc[0]
-                    col2[0].write("Most frequent end station: "+max_stn_end["end_station_name"]+" ("+str(max_stn_end['ride_id'])+")")
+                    col2[0].markdown("#### Time: "+str(currenttime))
 
                 with charts_placeholder.container():
 
@@ -220,17 +218,23 @@ if st.session_state.is_playing:
                     cumul_rides['time'] = cumul_rides['started_at'].dt.floor('1h')
 
                     # Calculate the average duration for each 3-hour interval
-                    average_duration = cumul_rides[['time', 'ride_id', 'rideable_type']].groupby(['time','rideable_type']).count().reset_index()
-                    ridetimefig = px.bar(average_duration, x="time", y='ride_id', title="Hourwise Ride Frequency", barmode='stack', color='rideable_type', height = 285, color_discrete_sequence=['teal', 'springgreen'])
+                    #average_duration = cumul_rides[['time', 'ride_id', 'rideable_type', 'earnings']].groupby(['time','rideable_type']).count().reset_index()
+                    average_duration = cumul_rides[['time', 'ride_id', 'rideable_type', 'revenue']].groupby(['time', 'rideable_type']).agg(
+                                                    ride_id_count=('ride_id', 'count'),  # Count of ride_id
+                                                    total_revenue=('revenue', 'sum')  # Sum of revenue
+                                                ).reset_index()
+                    
+                    ridetimefig = px.bar(average_duration, x="time", y='ride_id_count', title="Hourwise Ride Frequency", barmode='stack', color='rideable_type', height = 320, color_discrete_sequence=['teal', 'springgreen'], text_auto=True)
                     ridetimefig.update_layout(margin=dict(l=20, r=20, t=25, b=30), showlegend=False, yaxis_showgrid=False)
                     ridetimefig.add_hline(
-                                    y=average_duration['ride_id'].mean(),
+                                    y=average_duration['ride_id_count'].mean(),
                                     line_dash="dot",
                                     line_color="red",
-                                    annotation_text=f"Average: {average_duration['ride_id'].mean():.0f} rides",
+                                    annotation_text=f"Average: {average_duration['ride_id_count'].mean():.0f} rides",
                                     annotation_position="top left",
                                     annotation_font_color="black"
-                                )
+                    )
+
                     col2[1].plotly_chart(ridetimefig, key="ridetime "+str(current_date)+": "+str(i))
 
                     #Third Column
@@ -260,6 +264,9 @@ if st.session_state.is_playing:
                             row2[0].metric("Rides completed today", value = i+1, delta = str(i+1-predicted_today)+" (Predicted)")
                             row2[1].metric("Revenue/ride (Classic)", value="$"+str(round(classic_rpr,2)))
                             row2[2].metric("Revenue/ride (Electric)", value="$"+str(round(electric_rpr,2)))
+
+                            st.metric("Most frequent start station", value=max_stn_start["start_station_name"], delta = str(max_stn_start["ride_id"])+" rides", delta_color='off')
+                            st.metric("Most frequent end station", value=max_stn_end["end_station_name"], delta = str(max_stn_end["ride_id"])+" rides", delta_color='off')
 
 
                 time.sleep(intradayrefresh)
