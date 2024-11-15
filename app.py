@@ -104,7 +104,7 @@ def get_ride_data(date):
     #conn = duckdb.connect('bikeshare_db.duckdb')
     #rides = conn.execute(f"SELECT * FROM ride_data WHERE CAST(started_at AS DATE) = '{date}' ORDER BY started_at ASC").df()
     rides = fetch_rides()
-    rides = rides[rides['started_at'].date() == date]]
+    rides = rides[rides['started_at'].date() == date]
     rides = calculate_earnings(rides)
     return rides
 
