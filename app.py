@@ -54,7 +54,8 @@ weather = get_weather_data()
 @st.cache_resource()
 def fetch_rides():
     rides = pd.read_csv("simulation_data/sampledata.csv")
-    rides[["started_at", "ended_at"]] =  pd.to_datetime(rides[["started_at", "ended_at"]])
+    rides["started_at"] =  pd.to_datetime(rides["started_at"])
+    rides["ended_at"] =  pd.to_datetime(rides["ended_at"])
 
     return rides
 
