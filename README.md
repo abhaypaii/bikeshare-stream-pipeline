@@ -19,7 +19,7 @@ Python version: 3.11.1
     5. Streamlit for interactive data viz. 
 ## Pipeline Overview
 
-<img src="images/system design.png" alt="Pipeline" width="700"/>
+<img src="images/system design.png" alt="Pipeline" width="1000"/>
 
 ## File Directory
 ## System Setup
