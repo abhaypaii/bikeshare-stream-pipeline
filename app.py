@@ -6,6 +6,8 @@ import time
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
+import pydeck as pdk
+import pendulum
 
 st.set_page_config(
     page_title= "Bikeshare Dashboard",
@@ -21,7 +23,7 @@ px.set_mapbox_access_token(st.secrets['mapbox_token'])
 st.markdown("""
         <style>
                .block-container {
-                    padding-top: 1rem;
+                    padding-top: 0.8rem;
                     padding-bottom: 0rem;
                     padding-left: 2.5rem;
                     padding-right: 2.5rem;
@@ -154,8 +156,9 @@ if st.session_state.is_playing:
 
         #DAY ELEMENTS
         with placeholder.container():
-            titlecol = st.columns(4)
-            titlecol[0].markdown(f"## Date: {current_date}")
+            titlecol = st.columns([1,0.5,0.7,0.7], vertical_alignment='center')
+            dt = current_date.strftime('%A, %d %B %Y')
+            titlecol[0].markdown(f"### Date: {dt}")
             intradayrefresh = titlecol[2].slider("Intraday refresh (in seconds)", min_value=1.0, max_value=5.0, step=0.5, value=2.0, key = "slider1 - "+str(idx))
             dailyrefresh = titlecol[3].slider("Daily refresh (in seconds)", min_value=1.0, max_value=5.0, step=0.5, value=2.0, key = "slider2 - "+str(idx))
             with st.container(border=True):
@@ -168,41 +171,78 @@ if st.session_state.is_playing:
                 col1[5].metric("Humidity", value=str(round(row['humidity'],2))+"%")
 
             first = rides.iloc[0].to_frame().T
-            fig = px.scatter_mapbox(first, lat = 'start_lat', lon = 'start_lng', height=400)
+            #fig = px.scatter_mapbox(first, lat = 'start_lat', lon = 'start_lng', height=400)
 
             #NON-DISAPPEARING TIME ELEMENTS
             for i in range(0, len(rides), int(len(rides)/8)):
                 ride = rides.iloc[i].to_frame().T
                 cumul_rides = pd.concat([ride, rides.iloc[:i]], ignore_index=True).drop_duplicates()
                 cumul_rides['started_at'] = pd.to_datetime(cumul_rides['started_at'])
-                fig.update_layout(
-                            mapbox_style='carto-positron',  
-                            mapbox_center={"lat": 38.888, "lon": -77.021},
-                            mapbox_zoom=9, 
-                            mapbox_bearing=0,
-                            mapbox_pitch=-10,
-                            margin={"r": 0, "t": 0, "l": 0, "b": 0},
-                            showlegend=False  # Show legend if needed
-                        )
+                #fig.update_layout(
+                 #           mapbox_style='carto-positron',  
+                  #          mapbox_center={"lat": 38.888, "lon": -77.021},
+                   #         mapbox_zoom=9, 
+                    #        mapbox_bearing=0,
+                     #       mapbox_pitch=-10,
+                      #      margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                       #     showlegend=False  # Show legend if needed
+                        #)
 
-                fig.add_trace(go.Scattermapbox(
-                        lat=list(cumul_rides['start_lat']),
-                        lon=list(cumul_rides['start_lng']),
-                        mode='markers',
-                        marker=dict(size=5,color="skyblue"),
-                        cluster=dict(enabled=True),
-                        textfont=dict(color='white')
-                    ))
+                #fig.add_trace(go.Scattermapbox(
+                 #       lat=list(cumul_rides['start_lat']),
+                  #      lon=list(cumul_rides['start_lng']),
+                   #     mode='markers',
+                    #    marker=dict(size=5,color="skyblue"),
+                     #   cluster=dict(enabled=True),
+                      #  textfont=dict(color='white')
+                    #))
 
                 with map_placeholder.container():
                     currenttime = cumul_rides.iloc[-1]['started_at'].time()
                     col2 = st.columns([1,1,1.1])
-                    col2[0].plotly_chart(fig, key="map - "+str(current_date)+" - "+str(i))
+                    #col2[0].plotly_chart(fig, key="map - "+str(current_date)+" - "+str(i))
 
                     max_stn_start = cumul_rides[['start_station_name', "ride_id"]].groupby('start_station_name').count().reset_index().sort_values(by='ride_id', ascending=False).iloc[0]
-
                     max_stn_end = cumul_rides[['end_station_name', "ride_id"]].groupby('end_station_name').count().reset_index().sort_values(by='ride_id', ascending=False).iloc[0]
-                    col2[0].markdown("#### Time: "+str(currenttime))
+                    curtime = currenttime.strftime('%I:%M %p')
+                    col2[0].markdown("#### "+str(curtime))
+
+                    col2[0].pydeck_chart(
+                        pdk.Deck(
+                            map_style="mapbox://styles/mapbox/light-v9",
+                            initial_view_state={
+                                            "latitude": 38.888,
+                                            "longitude": -77.021,
+                                            "zoom": 9.5,
+                                            "pitch": 50,
+                                        },
+                            layers=[
+                                    pdk.Layer(
+                                        "HexagonLayer",
+                                        data=cumul_rides,
+                                        get_position=["start_lng", "start_lat"],
+                                        radius=200,
+                                        elevation_scale=4,
+                                        elevation_range=[0, 2000],
+                                        pickable=True,
+                                        extruded=True,
+                                    ),
+                                    pdk.Layer(
+                                        "ArcLayer",
+                                        data=cumul_rides,
+                                        get_width="S000 * 2",
+                                        get_source_position=["start_lng", "start_lat"],
+                                        get_target_position = ["end_lng", "end_lat"],
+                                        get_tilt=15,
+                                        get_source_color=[240, 100, 0, 40],
+                                        get_target_color=[0, 255, 0, 40],
+                                        pickable=True,
+                                        auto_highlight=True,
+                                    ),
+
+                            ],
+                        ), height=420
+                    )
 
                 with charts_placeholder.container():
 
@@ -224,8 +264,9 @@ if st.session_state.is_playing:
                                                     total_revenue=('revenue', 'sum')  # Sum of revenue
                                                 ).reset_index()
                     
-                    ridetimefig = px.bar(average_duration, x="time", y='ride_id_count', title="Hourwise Ride Frequency", barmode='stack', color='rideable_type', height = 320, color_discrete_sequence=['teal', 'springgreen'], text_auto=True)
+                    ridetimefig = px.bar(average_duration, x="time", y='ride_id_count', title="Hourwise Ride Frequency", barmode='stack', color='rideable_type', height = 350, color_discrete_sequence=['teal', 'springgreen'], text_auto=True)
                     ridetimefig.update_layout(margin=dict(l=20, r=20, t=25, b=30), showlegend=False, yaxis_showgrid=False)
+                    ridetimefig.update_xaxes(title_text="")
                     ridetimefig.add_hline(
                                     y=average_duration['ride_id_count'].mean(),
                                     line_dash="dot",
