@@ -7,7 +7,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
 import pydeck as pdk
-import pendulum
 
 st.set_page_config(
     page_title= "Bikeshare Dashboard",
