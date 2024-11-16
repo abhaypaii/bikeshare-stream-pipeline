@@ -22,6 +22,24 @@ Python version: 3.11.1
 <img src="images/system design.png" alt="Pipeline" width="1000"/>
 
 ## File Directory
+
+    .
+    ├── .streamlit/
+    │   ├── config.toml
+    │   └── secrets.toml
+    ├── ETL/
+    │   ├── bike_producer.py
+    │   ├── bike_transform.py
+    │   ├── bike_consumer.py
+    │   ├── weather_producer.py
+    │   ├── weather_consumer.py
+    │   └── duckdb_init.py
+    ├── app.py
+    ├── bikeshare_db.duckdb
+    ├── preprocessing.py
+    ├── .gitignore
+    └── requirements.txt
+
 ## System Setup
 
 1. Install Kafka and Zookeeper onto your system:
